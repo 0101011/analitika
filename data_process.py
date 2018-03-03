@@ -61,7 +61,6 @@ def filter(line, whitelist):
 
     #   Filters out all characters which are not in whitelist
 
-
     return ''.join([ch for ch in line if ch in whitelist])
 
 def filter_length(headings, descriptions):
