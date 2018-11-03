@@ -76,8 +76,8 @@ def filter_length(headings, descriptions):
                 filtered_headings.append(headings[i])
                 filtered_descriptions.append(descriptions[i])
 
-    print ('Length of filtered headings: {:,}'.format(len(filtered_headings)))
-    print ('Length of filtered descriptions: {:,}'.format(len(filtered_descriptions)))
+    print('Length of filtered headings: {:,}'.format(len(filtered_headings)))
+    print('Length of filtered descriptions: {:,}'.format(len(filtered_descriptions)))
 
     return (filtered_headings, filtered_descriptions)
 
@@ -87,7 +87,7 @@ def index_data(tokenized_sentences, vocab_size):
 
     freq_dist = nltk.FreqDist(itertools.chain(*tokenized_sentences))
     vocab = freq_dist.most_common(vocab_size)
-    print ('Vocab length: {:,}'.format(len(vocab)))
+    print('Vocab length: {:,}'.format(len(vocab)))
 
     idx2word = ['_'] + [UNK] + [x[0] for x in vocab]
     word2idx = dict([(w, i) for i, w in enumerate(idx2word)])
@@ -153,7 +153,7 @@ def process_data():
 
     #check percentage of unks
     unk_percentage = calculate_unk_percentage(idx_headings, idx_descriptions, word2idx)
-    print (calculate_unk_percentage(idx_headings, idx_descriptions, word2idx))
+    print(calculate_unk_percentage(idx_headings, idx_descriptions, word2idx))
 
     article_data = {
         'word2idx' : word2idx,
