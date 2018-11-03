@@ -1,13 +1,10 @@
-import json
-import config
-from os import path
 from nltk.tokenize import word_tokenize as tokenize
-import nltk
-import itertools
+import json, config, nltk, itertools
+from os import path
 import numpy as np
 import cPickle as pickle
 
-WHITELIST = '0123456789abcdefghijklmnopqrstuvwxyz '
+WHITELIST = '0123456789abcdefghijklmnopqrstuvwxyz'
 VOCAB_SIZE = 1200
 UNK = 'unk'
 
@@ -32,7 +29,7 @@ def tokenize_sentence(sentence):
 
 def article_is_complete(article):
 
-    # Check if an article has bot heading and description
+    # Check if an article has both heading and description
 
     if ('abstract' not in article) or ('article' not in article):
         return False
@@ -86,7 +83,7 @@ def filter_length(headings, descriptions):
 
 def index_data(tokenized_sentences, vocab_size):
 
-    # Forms vocab, and idx2word and word2idx dicts
+    # Forms vocab, idx2word and word2idx dicts
 
     freq_dist = nltk.FreqDist(itertools.chain(*tokenized_sentences))
     vocab = freq_dist.most_common(vocab_size)
@@ -114,7 +111,7 @@ def pad_seq(seq, lookup, max_length):
 def zero_pad(tokenized_headings, tokenized_descriptions, word2idx):
 
     # Stores indices in numpy arrays and
-    # creates zero padding where required
+    # Creates zero padding where required
 
     data_length = len(tokenized_descriptions)
 
