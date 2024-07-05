@@ -1,60 +1,80 @@
-# Article Data Processing Script
+# 🚀 Article Data Processing
 
-This script is designed to process raw article data, including tokenization, filtering, and conversion to numerical representations suitable for machine learning tasks. The script leverages the Natural Language Toolkit (nltk) for tokenization and frequency distribution analysis, and NumPy for numerical operations.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.7+](https://img.shields.io/badge/python-3.7+-blue.svg)](https://www.python.org/downloads/release/python-370/)
+[![Contributions Welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](CONTRIBUTING.md)
 
-## Dependencies
+This is a really old script from IBM Watson times I'm trying to keep afresh :)
 
-Before running this script, ensure the following dependencies are installed:
+## 🌟 So, what it does?
 
-- `nltk`: For natural language processing tasks.
-- `json`: For handling JSON data.
-- `config`: A custom configuration module for the project.
-- `numpy`: For numerical operations.
-- `cPickle` (or `pickle` in Python 3): For serializing objects.
+- 🎯 **Efficient Processing**: Tokenize and filter articles (now ***a little bit*** faster)
+- 🧠 **Pre-trained Embeddings**:
+- 🔮 **Data Augment**: Expand your dataset
+- 💾 **Storage**: I/O HDF5
+- 🛠 **Customizable**: Hopefully! ;)
 
-## Configuration
+## 🚀 Quick Start
 
-The script assumes the existence of a `config` module with a `path_data` variable that points to the directory containing the raw data and where the processed data will be stored.
+1. Clone the repo:
+   ```
+   git clone https://github.com/0101011/analitika.git
+   ```
 
-## Usage
+2. Install dependencies:
+   ```
+   pip install -r requirements.txt
+   ```
 
-1. Place your raw article data in a JSON file named `raw_data.json` in the `path_data` directory.
-2. Run the script using `python analitika.py
-3. The processed data will be saved in the `path_data` directory as a pickle file named `article_data.pkl`.
+3. Run the script:
+   ```
+   python analitika.py
+   ```
 
-## Description
+## 📚 Table of Contents
 
-### Functions
+- [Installation](#-installation)
+- [Usage](#-usage)
+- [Configuration](#-configuration)
+- [Contributing](#-contributing)
+- [License](#-license)
 
-- `load_raw_data(filename)`: Loads the raw JSON data and returns a list of articles.
-- `tokenize_sentence(sentence)`: Tokenizes a sentence into words and returns a string of space-separated words.
-- `article_is_complete(article)`: Checks if an article has both a heading and a description.
-- `tokenize_articles(raw_data)`: Tokenizes the articles and returns lists of headings and descriptions.
-- `filter(line, whitelist)`: Filters out characters not in the whitelist from a line of text.
-- `filter_length(headings, descriptions)`: Filters headings and descriptions based on length limits.
-- `index_data(tokenized_sentences, vocab_size)`: Creates a vocabulary, converts words to indices, and returns necessary data structures.
-- `pad_seq(seq, lookup, max_length)`: Pads a sequence with zeros to the maximum length.
-- `zero_pad(tokenized_headings, tokenized_descriptions, word2idx)`: Converts tokenized data to numpy arrays with zero padding.
-- `process_data()`: Orchestrates the data processing pipeline.
-- `pickle_data(article_data)`: Saves processed data to disk as a pickle file.
-- `unpickle_articles()`: Loads processed data from disk.
-- `calculate_unk_percentage(idx_headings, idx_descriptions, word2idx)`: Calculates the percentage of unknown words in the data.
-- `main()`: The entry point of the script that calls `process_data()`.
+## 🎮 Usage
 
-### Global Variables
+1. Place your `raw_data.json` in the `data/` directory
+2. (Optional) Add pre-trained embeddings to `data/`
+3. Run the script:
+   ```
+   python analitika.py
+   ```
+4. Find processed data in `data/` as HDF5 and pickle files
 
-- `WHITELIST`: A string of characters allowed in the processed text.
-- `VOCAB_SIZE`: The maximum size of the vocabulary.
-- `UNK`: The token used to represent unknown words.
-- `limit`: A dictionary containing length limits for headings and descriptions.
+## ⚙ Configuration
 
-## Notes
+Customize the script by modifying these variables:
 
-- The script assumes that each article in the raw data has `abstract` and `article` fields for headings and descriptions, respectively.
-- The processed data includes a vocabulary, word-to-index and index-to-word mappings, and frequency distributions of words.
-- The script performs zero padding on tokenized data to ensure uniform lengths for batch processing in machine learning models.
-- The percentage of unknown words in the final dataset is calculated and printed for analysis.
+- `WHITELIST`: Allowed characters
+- `VOCAB_SIZE`: Maximum vocabulary size
+- `limit`: Length constraints for articles
 
-## License
+## 🤝 Contributing
 
-This script is provided as-is, without warranty. It is free for personal and commercial use under the MIT License.
+Here are some ways you can contribute:
+
+- 💡 My goal was to develop a package or CLI tool out of it. Maybe we'll come up with something.
+
+## 📜 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙌 Acknowledgements
+
+- [NLTK](https://www.nltk.org/) for natural language processing
+- [Gensim](https://radimrehurek.com/gensim/) for word embeddings
+- [HDF5 for Python](https://www.h5py.org/) for efficient data storage
+
+---
+
+<p align="center">
+  Made with ❤️ by [Your Name]
+</p>
