@@ -1,5 +1,7 @@
 import json
 import itertools
+import ssl
+import warnings
 from os import path
 from typing import List, Tuple, Dict
 
@@ -12,30 +14,70 @@ from gensim.models import KeyedVectors
 from transformers import AutoTokenizer, AutoModel
 import h5py
 
-import config
+from config import get_config
 
-WHITELIST = set('0123456789abcdefghijklmnopqrstuvwxyz')
-VOCAB_SIZE = 1200
+CONFIG = get_config()
+
+try:
+    _create_unverified_https_context = ssl._create_unverified_context
+except AttributeError:
+    pass
+else:
+    ssl._create_default_https_context = _create_unverified_https_context
+
+def download_nltk_data():
+    try:
+        nltk.data.find('tokenizers/punkt')
+    except LookupError:
+        print("NLTK 'punkt' resource not found. Attempting to download...")
+        try:
+            nltk.download('punkt', quiet=True)
+        except ssl.SSLError:
+            warnings.warn(
+                "SSL certificate verification failed. Attempting to download NLTK data without verification. "
+                "This is not secure and should only be used for testing purposes.",
+                UserWarning
+            )
+            try:
+                _create_unverified_https_context = ssl._create_unverified_context
+            except AttributeError:
+                pass
+            else:
+                ssl._create_default_https_context = _create_unverified_https_context
+            nltk.download('punkt', quiet=True)
+
+# Download necessary NLTK data
+download_nltk_data()
+
+WHITELIST = CONFIG['WHITELIST']
+VOCAB_SIZE = CONFIG['VOCAB_SIZE']
+UNK = 'unk'
+
+WHITELIST = CONFIG['WHITELIST']
+VOCAB_SIZE = CONFIG['VOCAB_SIZE']
 UNK = 'unk'
 
 limit = {
-    'max_descriptions': 400,
-    'min_descriptions': 0,
-    'max_headings': 20,
+    'max_descriptions': CONFIG['MAX_DESCRIPTION_LENGTH'],
+    'min_descriptions': CONFIG['MIN_DESCRIPTION_LENGTH'],
+    'max_headings': CONFIG['MAX_HEADING_LENGTH'],
     'min_headings': 0,
 }
 
-def load_raw_data(filename: str) -> List[Dict]:
-    """Load raw data from a JSON file."""
+def load_raw_data(filename):
     with open(filename, 'r') as fp:
         raw_data = json.load(fp)
-    
     print(f'Loaded {len(raw_data):,} articles from {filename}')
     return raw_data
 
-def tokenize_sentence(sentence: str) -> str:
-    """Tokenize a sentence using NLTK."""
-    return ' '.join(word_tokenize(sentence))
+def tokenize_sentence(sentence):
+    if CONFIG['TOKENIZER'] == 'nltk':
+        return ' '.join(word_tokenize(sentence))
+    elif CONFIG['TOKENIZER'] == 'custom':
+        from custom_tokenizer import custom_tokenize
+        return ' '.join(custom_tokenize(sentence))
+    else:
+        raise ValueError(f"Unsupported tokenizer: {CONFIG['TOKENIZER']}")
 
 def article_is_complete(article: Dict) -> bool:
     """Check if an article has both heading and description."""
@@ -50,7 +92,7 @@ def tokenize_articles(raw_data: List[Dict]) -> Tuple[List[str], List[str]]:
         if article_is_complete(a):
             headings.append(tokenize_sentence(a['abstract']))
             descriptions.append(tokenize_sentence(a['article']))
-        if i % config.print_freq == 0:
+        if i % 1000 == 0:  # Print progress every 1000 articles
             print(f'Tokenized {i:,} / {len(raw_data):,} articles')
     
     return headings, descriptions
@@ -129,7 +171,7 @@ def augment_data(descriptions: List[str]) -> List[str]:
 
 def process_data():
     """Process the data and prepare it for model training."""
-    filename = path.join(config.path_data, 'raw_data.json')
+    filename = CONFIG['RAW_DATA_FILE']
     raw_data = load_raw_data(filename)
 
     headings, descriptions = tokenize_articles(raw_data)
@@ -139,7 +181,10 @@ def process_data():
     headings, descriptions = filter_length(headings, descriptions)
 
     # Data augmentation
-    augmented_descriptions = augment_data(descriptions)
+    if CONFIG['ENABLE_AUGMENTATION']:
+        augmented_descriptions = augment_data(descriptions)
+    else:
+        augmented_descriptions = descriptions
     
     word_tokenized_headings = [word_list.split() for word_list in headings]
     word_tokenized_descriptions = [word_list.split() for word_list in augmented_descriptions]
@@ -152,7 +197,10 @@ def process_data():
     print(f"UNK percentage: {unk_percentage:.2f}%")
 
     # Load pre-trained embeddings
-    embedding_matrix = load_pretrained_embeddings(word2idx)
+    if CONFIG['USE_PRETRAINED_EMBEDDINGS']:
+        embedding_matrix = load_pretrained_embeddings(word2idx)
+    else:
+        embedding_matrix = None
 
     article_data = {
         'word2idx': word2idx,
@@ -168,10 +216,11 @@ def process_data():
 
 def save_data(article_data: Dict, idx_headings: np.ndarray, idx_descriptions: np.ndarray):
     """Save processed data to disk using HDF5 format."""
-    with h5py.File(path.join(config.path_data, 'processed_data.h5'), 'w') as hf:
+    with h5py.File(CONFIG['PROCESSED_DATA_FILE'], 'w') as hf:
         hf.create_dataset('idx_headings', data=idx_headings)
         hf.create_dataset('idx_descriptions', data=idx_descriptions)
-        hf.create_dataset('embedding_matrix', data=article_data['embedding_matrix'])
+        if article_data['embedding_matrix'] is not None:
+            hf.create_dataset('embedding_matrix', data=article_data['embedding_matrix'])
         
         # Save metadata
         metadata = hf.create_group('metadata')
@@ -180,17 +229,17 @@ def save_data(article_data: Dict, idx_headings: np.ndarray, idx_descriptions: np
         metadata.attrs['max_description_length'] = limit['max_descriptions']
 
     # Save other data using pickle
-    with open(path.join(config.path_data, 'article_metadata.pkl'), 'wb') as fp:
+    with open(CONFIG['METADATA_FILE'], 'wb') as fp:
         pickle.dump({k: v for k, v in article_data.items() if k != 'embedding_matrix'}, fp)
 
 def load_processed_data() -> Tuple[Dict, np.ndarray, np.ndarray]:
     """Load processed data from disk."""
-    with h5py.File(path.join(config.path_data, 'processed_data.h5'), 'r') as hf:
+    with h5py.File(CONFIG['PROCESSED_DATA_FILE'], 'r') as hf:
         idx_headings = hf['idx_headings'][:]
         idx_descriptions = hf['idx_descriptions'][:]
-        embedding_matrix = hf['embedding_matrix'][:]
+        embedding_matrix = hf['embedding_matrix'][:] if 'embedding_matrix' in hf else None
 
-    with open(path.join(config.path_data, 'article_metadata.pkl'), 'rb') as fp:
+    with open(CONFIG['METADATA_FILE'], 'rb') as fp:
         article_data = pickle.load(fp)
     
     article_data['embedding_matrix'] = embedding_matrix
